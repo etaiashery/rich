@@ -344,6 +344,39 @@ def test_split_cells_single() -> None:
         assert cell_len(right.text) == test.cell_length - position
 
 
+def test_split_cells_zero_width_chars() -> None:
+    """Check that zero-width characters (combining marks, diacritics) stay with their base character."""
+    # Hebrew with niqud (diacritics) - "שָׁלוֹם עולם" (Shalom Olam)
+    # The dots and marks are zero-width combining characters
+    hebrew_text = "שָׁלוֹם עולם"
+    hebrew_segment = Segment(hebrew_text)
+    
+    # Split at various positions and ensure cell lengths are correct
+    for position in range(1, hebrew_segment.cell_length):
+        left, right = hebrew_segment.split_cells(position)
+        assert cell_len(left.text) == position, (
+            f"Hebrew text split at {position}: left should be {position} cells, "
+            f"got {cell_len(left.text)}"
+        )
+        assert cell_len(right.text) == hebrew_segment.cell_length - position
+    
+    # Specific test case: splitting at position 3 should keep "וֹ" together
+    left, right = hebrew_segment.split_cells(3)
+    # The vav (ו) and its dot (ֹ) should be together in the left segment
+    assert "וֹ" in left.text or "וֹ" not in hebrew_text, (
+        "Vav and its dot should not be separated"
+    )
+    
+    # Arabic with diacritics
+    arabic_text = "مَرْحَبًا"  # "marhaban" with diacritics
+    arabic_segment = Segment(arabic_text)
+    
+    for position in range(1, arabic_segment.cell_length):
+        left, right = arabic_segment.split_cells(position)
+        assert cell_len(left.text) == position
+        assert cell_len(right.text) == arabic_segment.cell_length - position
+
+
 def test_segment_lines_renderable():
     lines = [[Segment("hello"), Segment(" "), Segment("world")], [Segment("foo")]]
     segment_lines = SegmentLines(lines)
